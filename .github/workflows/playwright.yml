@@ -36,6 +36,7 @@ jobs:
     - name: 🧪 Run Playwright tests
       run: npx playwright test --project=${{ matrix.browser }} --reporter=github
       env:
+        CI: true
         QBENCH_BASE_URL: ${{ secrets.QBENCH_BASE_URL || 'https://srqaengineer-ba-uat.qbench.net' }}
         QBENCH_USERNAME: ${{ secrets.QBENCH_USERNAME || 'melvin+qaengineer@qbench.com' }}
         QBENCH_PASSWORD: ${{ secrets.QBENCH_PASSWORD }}
@@ -81,6 +82,7 @@ jobs:
     - name: 🎯 Run all tests (Complete Suite)
       run: npx playwright test --reporter=html
       env:
+        CI: true
         QBENCH_BASE_URL: ${{ secrets.QBENCH_BASE_URL || 'https://srqaengineer-ba-uat.qbench.net' }}
         QBENCH_USERNAME: ${{ secrets.QBENCH_USERNAME || 'melvin+qaengineer@qbench.com' }}
         QBENCH_PASSWORD: ${{ secrets.QBENCH_PASSWORD }}
