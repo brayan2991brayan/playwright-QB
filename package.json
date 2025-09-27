@@ -1,0 +1,34 @@
+{
+  "name": "qbench-qa-automation",
+  "version": "1.0.0",
+  "description": "QBench QA Automation Framework using Playwright with TypeScript for Order → Sample → Test workflow",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:workflow": "playwright test tests/qbench/simple-workflow.spec.ts",
+    "test:workflow:headed": "playwright test tests/qbench/simple-workflow.spec.ts --headed",
+    "test:auth": "playwright test tests/qbench/auth.spec.ts",
+    "test:orders": "playwright test tests/qbench/orders.spec.ts",
+    "test:samples": "playwright test tests/qbench/samples.spec.ts",
+    "test:cross-browser": "playwright test tests/qbench/simple-workflow.spec.ts --project=chromium --project=firefox --project=webkit",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install"
+  },
+  "keywords": [
+    "qbench",
+    "automation",
+    "playwright",
+    "typescript",
+    "testing",
+    "qa"
+  ],
+  "author": "QA Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "@types/node": "^24.5.2",
+    "dotenv": "^17.2.2",
+    "typescript": "^5.9.2"
+  }
+}
