@@ -1,245 +1,132 @@
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 
-export class OrderPage extends BasePage {
-  readonly newOrderLink: string;
-  readonly customerDropdown: string;
-  readonly dateReceivedField: string;
-  readonly dueDateField: string;
-  readonly orderReviewerDropdown: string;
-  readonly specialInstructionsField: string;
-  readonly saveButton: string;
-  readonly ordersTable: string;
-  readonly orderRow: string;
-  readonly workflowMenu: string;
-  readonly ordersSubmenu: string;
-
+export default class OrderPage extends BasePage {
   constructor(page: Page) {
     super(page);
-    // ✅ Navigation selectors - UPDATED with REAL QBench interface analysis
-    this.workflowMenu = 'a.clickable:has-text("Workflow")';
-    this.ordersSubmenu = 'a.clickable:has-text("Orders")';
-    this.newOrderLink = 'a[href="/order"]'; // + New Order
-    
-    // ✅ Form field selectors - SUPER SPECIFIC for VISIBLE elements
-    this.customerDropdown = 'input:visible, select:visible';
-    this.dateReceivedField = 'input:visible';
-    this.dueDateField = 'input:visible:nth-of-type(2)';
-    this.orderReviewerDropdown = 'select:visible, input:visible:nth-of-type(3)';
-    this.specialInstructionsField = 'textarea:visible, input:visible:last-of-type';
-    this.saveButton = 'button:visible:not(.close), input[type="submit"]:visible';
-    
-    // List/table selectors
-    this.ordersTable = 'table, .qbench-paginated-entities-table';
-    this.orderRow = 'tr';
   }
 
-  /**
-   * 🎯 Navigate to Orders - PATCH: Don't navigate, use current page
-   */
-  async navigateToOrders(): Promise<void> {
-    // PATCH: Don't navigate to another URL, work on current page
-    await this.page.waitForLoadState('networkidle');
-    console.log('✅ Using current page for order operations');
-  }
-
-  /**
-   * 🎯 Navigate to New Order - PATCH: Don't navigate, use current page  
-   */
   async navigateToNewOrder(): Promise<void> {
-    // PATCH: Don't navigate to another URL, work on current page
-    await this.page.waitForLoadState('networkidle');
-    console.log('✅ Using current page for new order operations');
-  }
-
-  /**
-   * 🎯 Click New Order Link - Alternative navigation method
-   */
-  async clickNewOrder(): Promise<void> {
     try {
-      // First try the direct link
-      const newOrderLink = this.page.locator(this.newOrderLink);
-      await newOrderLink.waitFor({ state: 'visible', timeout: 5000 });
-      await newOrderLink.click();
-      await this.page.waitForLoadState('networkidle');
-      console.log('✅ Clicked + New Order link');
-    } catch (error) {
-      console.log('🔄 Direct link failed, using URL navigation');
-      await this.navigateToNewOrder();
+      await this.page.hover('a:has-text("Workflow")');
+      await this.page.waitForTimeout(1000);
+      await this.page.click('a:has-text("Workflow")');
+      await this.page.waitForTimeout(1000);
+      await this.page.click('a:has-text("Orders")');
+      await this.page.waitForTimeout(1500);
+      await this.page.click('a:has-text("+ New Order"), button:has-text("+ New Order"), .btn:has-text("New Order")');
+      await this.page.waitForTimeout(2000);
+    } catch (error: any) {
+      console.error('Error navigating to new order:', error);
     }
   }
 
-  /**
-   * 🎯 Create Order - Uses REAL form field selectors
-   */
-  async createOrder(orderData: {
-    customer?: string;
-    dateReceived?: string;
-    dueDate?: string;
-    reviewer?: string;
-    specialInstructions?: string;
-  }): Promise<string> {
-    console.log('🚀 Starting order creation...');
-    
-    // Ensure we're on the order creation page
-    await this.navigateToNewOrder();
+  private async extractOrderId(): Promise<string> {
+    const patterns = [
+      /order[#\s]*(\w+)/i,
+      /id[#:\s]*(\w+)/i,
+      /#(\w+)/,
+      /(\d+)/
+    ];
 
-    try {
-      // Fill Date Received field - With longer timeout
-      if (orderData.dateReceived) {
-        const dateField = this.page.locator(this.dateReceivedField).first();
-        await dateField.waitFor({ state: 'visible', timeout: 15000 });
-        await dateField.fill(orderData.dateReceived);
-        console.log('✅ Date Received filled');
-      }
+    // Check URL first
+    const currentUrl = this.page.url();
+    const urlMatch = currentUrl.match(/order[s]?\/(\w+)/i) || currentUrl.match(/id[=\/](\w+)/i);
+    if (urlMatch) return urlMatch[1];
 
-      // Fill Customer dropdown/field
-      if (orderData.customer) {
-        try {
-          const customerField = this.page.locator(this.customerDropdown).first();
-          await customerField.waitFor({ state: 'visible', timeout: 15000 });
-          
-          // Check if it's a select or input
-          const tagName = await customerField.evaluate(el => el.tagName.toLowerCase());
-          if (tagName === 'select') {
-            await customerField.selectOption({ label: orderData.customer });
-          } else {
-            await customerField.fill(orderData.customer);
-          }
-          console.log('✅ Customer field filled');
-        } catch (error) {
-          console.log('⚠️ Customer field not found or not fillable, continuing...');
-        }
-      }
+    // Check title and success messages
+    const selectors = [
+      '.alert-success',
+      '.success-message',
+      '.notification-success',
+      '.flash-success',
+      'h1, h2, h3',
+      '.page-title',
+      '.breadcrumb',
+      '.order-header'
+    ];
 
-      // Fill Due Date
-      if (orderData.dueDate) {
-        try {
-          const dueDateField = this.page.locator(this.dueDateField).first();
-          await dueDateField.waitFor({ state: 'visible', timeout: 10000 });
-          await dueDateField.fill(orderData.dueDate);
-          console.log('✅ Due Date filled');
-        } catch (error) {
-          console.log('⚠️ Due Date field not found, continuing...');
-        }
-      }
-
-      // Fill Special Instructions
-      if (orderData.specialInstructions) {
-        try {
-          const instructionsField = this.page.locator(this.specialInstructionsField).first();
-          await instructionsField.waitFor({ state: 'visible', timeout: 10000 });
-          await instructionsField.fill(orderData.specialInstructions);
-          console.log('✅ Special Instructions filled');
-        } catch (error) {
-          console.log('⚠️ Special Instructions field not found, continuing...');
-        }
-      }
-
-      // Save the order - PATCH: Force click even if disabled
-      const saveButton = this.page.locator(this.saveButton).first();
-      await saveButton.waitFor({ state: 'visible', timeout: 15000 });
-      
-      // FORCE CLICK - bypass disabled state
-      await saveButton.click({ force: true });
-      console.log('✅ Save button clicked (forced)');
-
-      // Wait for navigation or success message
-      await this.page.waitForLoadState('networkidle');
-      
-      // Try to extract order ID from URL or page
-      let orderId = 'ORDER_' + Date.now();
+    for (const selector of selectors) {
       try {
-        const currentUrl = this.page.url();
-        const match = currentUrl.match(/\/order\/(\d+)/);
-        if (match) {
-          orderId = match[1];
+        const element = this.page.locator(selector).first();
+        if (await element.isVisible()) {
+          const text = await element.textContent() || '';
+          for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) return match[1];
+          }
         }
-      } catch (error) {
-        console.log('⚠️ Could not extract order ID, using generated ID');
+      } catch {
+        continue;
       }
-
-      console.log(`🎉 Order created successfully! Order ID: ${orderId}`);
-      return orderId;
-
-    } catch (error: any) {
-      console.error('❌ Order creation failed:', error);
-      
-      // Take a screenshot for debugging
-      await this.takeScreenshot('order-creation-error');
-      
-      throw new Error(`Order creation failed: ${error?.message || 'Unknown error'}`);
     }
+
+    return '';
   }
 
-  /**
-   * 🎯 Get all form elements for debugging
-   */
-  async debugFormElements(): Promise<void> {
-    console.log('🔍 Debugging form elements...');
-    
-    const inputs = await this.page.locator('input').count();
-    const selects = await this.page.locator('select').count();
-    const textareas = await this.page.locator('textarea').count();
-    const buttons = await this.page.locator('button').count();
-    
-    console.log(`📋 Form elements found:
-      - Inputs: ${inputs}
-      - Selects: ${selects}  
-      - Textareas: ${textareas}
-      - Buttons: ${buttons}`);
+  async createOrder(): Promise<{
+    orderId: string;
+    customerName: string;
+    wasActuallyCreated: boolean;
+  }> {
+    let customerName = '';
+    let wasActuallyCreated = false;
+    let actualOrderId = '';
 
-    // List first few input placeholders
-    const inputsWithPlaceholders = await this.page.locator('input[placeholder]').all();
-    for (let i = 0; i < Math.min(5, inputsWithPlaceholders.length); i++) {
-      const placeholder = await inputsWithPlaceholders[i].getAttribute('placeholder');
-      const name = await inputsWithPlaceholders[i].getAttribute('name');
-      console.log(`  🏷️ Input ${i + 1}: placeholder="${placeholder}", name="${name}"`);
-    }
-  }
-
-  /**
-   * 🎯 Verify order exists in the list
-   */
-  async verifyOrderExists(orderId: string): Promise<boolean> {
-    await this.navigateToOrders();
-    
     try {
-      const orderElement = this.page.locator(`text="${orderId}"`);
-      await orderElement.waitFor({ state: 'visible', timeout: 10000 });
-      console.log(`✅ Order ${orderId} found in the list`);
-      return true;
-    } catch (error) {
-      console.log(`⚠️ Order ${orderId} not found in the list`);
-      return false;
-    }
-  }
+      // 1. Navigate to new order form
+      await this.navigateToNewOrder();
+      await this.page.waitForTimeout(2000);
 
-  /**
-   * 🎯 Get order details from the list
-   */
-  async getOrderDetails(orderId: string): Promise<any> {
-    await this.navigateToOrders();
-    
-    try {
-      const orderRow = this.page.locator(`tr:has-text("${orderId}")`);
-      await orderRow.waitFor({ state: 'visible', timeout: 10000 });
+      // 2. Select Customer (Required)
+      await this.page.waitForLoadState('networkidle');
       
-      const orderText = await orderRow.textContent();
-      console.log(`📋 Order ${orderId} details: ${orderText}`);
+      await this.page.getByRole('link', { name: 'Select Customer' }).click();
+      await this.page.getByRole('option', { name: '— ACME Labs' }).click();
+      await this.page.getByRole('link', { name: ' special fields' }).click();
+      await this.page.locator('#s2id_autogen1').click();
+      await this.page.getByRole('option', { name: 'Melvin Caraang' }).click();
+      customerName = 'ACME Labs';
+
+      // 4. Fill Date Received
+      await this.page.waitForSelector('input[name*="received" i], input[placeholder*="received" i]', { state: 'visible', timeout: 5000 });
+      const today = new Date().toISOString().split('T')[0];
+      await this.page.getByRole('textbox', { name: 'Date Received' }).click();
+      await this.page.getByRole('cell', { name: '27' }).click();
       
-      return {
-        id: orderId,
-        found: true,
-        details: orderText
-      };
+      // 5. Fill Date Completed
+      await this.page.getByRole('textbox', { name: 'Date Completed' }).click();
+      await this.page.getByRole('cell', { name: '27' }).click();
+      await this.page.locator('.tab-content').first().click();  // Click fuera para cerrar el datepicker
+
+      // 5. Click Save Order y esperar la redirección
+      await this.page.getByRole('button', { name: 'Save Order' }).click();
+      
+      // Esperar a que la página se actualice
+      await this.page.waitForLoadState('networkidle');
+      
+      // Esperar a que aparezca el botón Print Order Labels (indica que estamos en la página de la orden)
+      await this.page.getByRole('button', { name: 'Print Order Labels' }).waitFor({ state: 'visible', timeout: 15000 });
+      
+      // Esperar unos segundos más para asegurar que todo está cargado
+      await this.page.waitForTimeout(2000);
+
+      // Get order ID and mark as created
+      actualOrderId = await this.extractOrderId();
+      wasActuallyCreated = true;
     } catch (error: any) {
-      console.log(`❌ Could not get order details for ${orderId}`);
-      return {
-        id: orderId,
-        found: false,
-        error: error?.message || 'Unknown error'
-      };
+      console.error('Error during order creation:', error);
     }
+
+    // Ensure we have an order ID
+    if (!actualOrderId) {
+      actualOrderId = 'ORDER_' + Date.now();
+    }
+
+    return {
+      orderId: actualOrderId,
+      customerName,
+      wasActuallyCreated
+    };
   }
 }

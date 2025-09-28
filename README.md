@@ -106,9 +106,7 @@ This project automates the core QBench workflow:
 
 ### 🏃 Run All Tests
 ```bash
-npm test
-# or
-npx playwright test
+npm test -- --headed --project=chromium --workers=1
 ```
 
 ### 🎨 Available NPM Scripts

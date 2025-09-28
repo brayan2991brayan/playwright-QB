@@ -28,22 +28,15 @@ export class LoginPage extends BasePage {
 
   async verifyLoginSuccess(): Promise<void> {
     try {
-      // More flexible login verification
       await Promise.race([
-        this.waitForSelector(this.dashboardTitle),
-        this.waitForSelector('h3.page-title'),
         this.waitForSelector('.page-title'),
-        this.page.waitForURL('**/dashboard', { timeout: 10000 }),
         this.page.waitForURL(/(?!.*login)/, { timeout: 10000 })
       ]);
-      console.log('✅ Login verification successful');
     } catch (error) {
-      // Fallback: check URL change
       const currentUrl = this.page.url();
       if (currentUrl.includes('login') || currentUrl.includes('signin')) {
         throw new Error('Login failed - still on login page');
       }
-      console.log('✅ Login successful (URL-based verification)');
     }
   }
 
